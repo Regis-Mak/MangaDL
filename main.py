@@ -16,12 +16,12 @@ VERSION = 1.1
 DEBUG_MODE = False
 HEADLESS = False
 
-GECKODRIVER_PATH = "C:\\Users\\dumpl\\Documents\\Firefox_Webscrape\\geckodriver.exe"
+GECKODRIVER_PATH = "Firefox_Webscrape\\geckodriver.exe"
 FIREFOX_BINARY_PATH = "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
-EXTENSION_PATH = "C:\\Users\\dumpl\\Documents\\Projects\\MangaDL\\AdBlock\\adblock_for_firefox-6.13.0.xpi"
+EXTENSION_PATH = "AdBlock\\adblock_for_firefox-6.13.0.xpi"
 
 GOOGLE = "https://google.com"
-CSV_PATH = "C:\\Users\\dumpl\\Documents\\Projects\\MangaDL\\Input\\titles.csv"
+CSV_PATH = "Input\\titles.csv"
 
 
 TITLE = "-BLANK-"
