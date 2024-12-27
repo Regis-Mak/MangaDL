@@ -2,12 +2,16 @@ import time
 import csv
 import re
 import os
+import shutil
 
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 
 VERSION = 1.1
+
+DEBUG_MODE = True
 
 GECKODRIVER_PATH = "C:\\Users\\dumpl\\Documents\\Firefox_Webscrape\\geckodriver.exe"
 FIREFOX_BINARY_PATH = "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
@@ -28,6 +32,7 @@ def normalize_string(s):
 
 def target(title):
     global TITLE
+    global MAIN_WEBSITE
     TITLE = title
 
     normalized_title = normalize_string(title)
@@ -42,6 +47,7 @@ def target(title):
         if normalized_title == normalize_string(manga_title):
             print(f"Found: {manga_title} - {url}")
             TITLE = manga_title
+            MAIN_WEBSITE = url
             return url
 
     print("Manga not found in the CSV. Please add it manually.\n")
@@ -56,8 +62,57 @@ def target(title):
 
     print(f"Added new manga: {title} with link: {new_link}")
     
-
     return new_link
+
+def close_browser(driver, message):
+    print(message)
+    driver.quit()
+
+def download(driver):
+    print("Beginning Download")
+    elements = driver.find_elements(By.XPATH, "/html/body/div[2]/div[3]/div[1]/div[3]/ul/*[contains(@class, 'a-h')]")
+    elements = list(reversed(elements))
+    original_window = driver.current_window_handle
+
+    for chapter in elements:
+        chapter_link = chapter.find_element(By.XPATH, ".//a[@class='chapter-name text-nowrap']").get_attribute("href")
+        chapter_title = chapter.find_element(By.XPATH, ".//a[@class='chapter-name text-nowrap']").text
+        chapter_title = chapter_title.split(":")[0][:-1]
+
+        os.mkdir(chapter_title)
+        print(f"Downloading '{chapter_title}'")
+        
+        driver.execute_script(f"window.open('{chapter_link}', '_blank');")
+        driver.switch_to.window(driver.window_handles[-1])
+
+        os.chdir(chapter_title)
+        download_chapter(driver)
+        os.chdir('..')
+
+        driver.close()
+        driver.switch_to.window(original_window)
+
+def download_chapter(driver):
+    #Required if not it's too fast to download
+    time.sleep(1)
+
+    images = driver.find_elements(By.TAG_NAME, "img")
+    image_count = len(images)
+
+    if image_count <= 1:
+        print("No images found on this page or only one image present.")
+        return
+
+    print(f"Found {image_count} images in this chapter, excluding the last one.")
+
+    for idx, image in enumerate(images[:-1]):
+        try:
+            image_screenshot_path = f"{idx + 1}.png"
+            image.screenshot(image_screenshot_path)
+            print(f"Page {idx + 1} saved")
+        except Exception as e:
+            print(f"Error capturing image {idx + 1}: {e}")
+
 
 def main():
     #User Input
@@ -80,10 +135,10 @@ def main():
     
     current_window = driver.current_window_handle
 
-    print("Installing AdBlock (8s Delay)")
+    print("Installing AdBlock (5s Delay)")
     try:
         driver.install_addon(EXTENSION_PATH, temporary=True)
-        time.sleep(8)
+        time.sleep(5)
 
         driver.switch_to.window(driver.window_handles[1])
         driver.close()
@@ -94,14 +149,10 @@ def main():
     
     print("AdBlock Successfully Installed - Closing Tab\n")
 
-    #Actual Download Logic
     print(f"Opening '{TITLE}' on Manganato")
     driver.get(MAIN_WEBSITE)
 
-    #Delete THIS LATER
-    time.sleep(5)
-
-    #Output Directory
+    #Output Preperation
     try:
         print("Output Folder Found\n")
         os.chdir("Output")
@@ -110,36 +161,43 @@ def main():
         os.mkdir("Output")
         os.chdir("Output")
 
-
     try:
         os.mkdir(TITLE)
         print(f"Directory For '{TITLE}' created successfully.\n")
     except FileExistsError:
         print(f"Directory '{TITLE}' already exists.\nWARNING: Continuing will delete existing 'Directory : {TITLE}'\n")
 
-        while(1):
-            override = input("Would you like to proceed? (y/n) : ")
-            override.lower()
+        while True:
+            if DEBUG_MODE:
+                shutil.rmtree(TITLE)
+                os.mkdir(TITLE)
+                print(f"DEBUG_MODE: Auto Overide. '{TITLE}' created successfully.\n")
+                break
 
-            if(override == 'y'):
-                os.rmdir(TITLE)
+            override = input("Would you like to proceed? (y/n) : ")
+            override = override.lower()
+
+            if override == 'y':
+                shutil.rmtree(TITLE)
                 os.mkdir(TITLE)
                 print(f"Directory For '{TITLE}' created successfully.\n")
-
                 break
-            elif(override == 'n'):
+            elif override == 'n':
                 close_browser(driver, "Run ABORTED - Closing Browser")
                 return
             print(". Invalid Input .")
     except Exception as e:
         print(f"An error occurred: {e}")
-        
+    
+    try:
+        os.chdir(TITLE)
+        download(driver)
+    except Exception as e:
+        close_browser(driver, e)
 
     close_browser(driver, "Run Finished - Closing Browser")
 
-def close_browser(driver, message):
-    print(message)
-    driver.quit()
+
 
 if __name__ == '__main__':
     print(f"\n\nMangaDL Version: '{VERSION}'\n")
