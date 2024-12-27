@@ -77,7 +77,9 @@ def download(driver):
     for chapter in elements:
         chapter_link = chapter.find_element(By.XPATH, ".//a[@class='chapter-name text-nowrap']").get_attribute("href")
         chapter_title = chapter.find_element(By.XPATH, ".//a[@class='chapter-name text-nowrap']").text
-        chapter_title = chapter_title.split(":")[0][:-1]
+
+        if ":" in chapter_title:
+            chapter_title = chapter_title.split(":")[0].strip()
 
         os.mkdir(chapter_title)
         print(f"Downloading '{chapter_title}'")
@@ -103,7 +105,7 @@ def download_chapter(driver):
         print("No images found on this page or only one image present.")
         return
 
-    print(f"Found {image_count} images in this chapter, excluding the last one.")
+    #print(f"Found {image_count} images in this chapter, excluding the last one.")
 
     for idx, image in enumerate(images[:-1]):
         try:
@@ -189,16 +191,20 @@ def main():
     except Exception as e:
         print(f"An error occurred: {e}")
     
+    #Attempt Download
     try:
+        start_time = time.time()
         os.chdir(TITLE)
         download(driver)
     except Exception as e:
         close_browser(driver, e)
 
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+
+    print(f"Time Elapsed: {elapsed_time:.2f}s")
     close_browser(driver, "Run Finished - Closing Browser")
 
-
-
 if __name__ == '__main__':
-    print(f"\n\nMangaDL Version: '{VERSION}'\n")
+    print(f"\nMangaDL Version: '{VERSION}'\n")
     main()
