@@ -109,7 +109,7 @@ def download_chapter(driver, chapter_title):
         print("No images found on this page or only one image present.")
         return
 
-    for idx, image in enumerate(tqdm(images[:-1], desc=f"Downloading {chapter_title}", unit="image", colour="blue")):
+    for idx, image in enumerate(tqdm(images[:-1], desc=f"{chapter_title}", unit="image", colour="blue")):
         try:
             image_screenshot_path = f"{idx + 1}.png"
             image.screenshot(image_screenshot_path)
@@ -180,7 +180,7 @@ def main():
                 print(f"DEBUG_MODE: Auto Overide. '{TITLE}' created successfully.\n")
                 break
 
-            override = input("Would you like to proceed? (y/n) : ")
+            override = input("Would you like to proceed? (y/n): ")
             override = override.lower()
 
             if override == 'y':
@@ -210,5 +210,5 @@ def main():
     close_browser(driver, "Run Finished - Closing Browser")
 
 if __name__ == '__main__':
-    print(f"\nMangaDL Version: '{VERSION}'\n")
+    print(f"\nMangaDL Version: '{VERSION}'\nHeadless: {HEADLESS}\n")
     main()
