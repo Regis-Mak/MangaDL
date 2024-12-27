@@ -1,6 +1,8 @@
 import time
 import csv
 import re
+import os
+
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
@@ -25,6 +27,9 @@ def normalize_string(s):
     return s
 
 def target(title):
+    global TITLE
+    TITLE = title
+
     normalized_title = normalize_string(title)
     manga_list = []
 
@@ -36,22 +41,22 @@ def target(title):
     for manga_title, url in manga_list:
         if normalized_title == normalize_string(manga_title):
             print(f"Found: {manga_title} - {url}")
-            global TITLE
-            global MAIN_WEBSITE
-
             TITLE = manga_title
-            MAIN_WEBSITE = url
-
             return url
 
-    print("Manga not found in the CSV. Please add it manually.")
+    print("Manga not found in the CSV. Please add it manually.\n")
     new_link = input("Link: ")
+
+    print(f"Adding new row: {title}, {new_link}")
 
     with open(CSV_PATH, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
+        file.seek(0, 2)
         writer.writerow([title, new_link])
-    
+
     print(f"Added new manga: {title} with link: {new_link}")
+    
+
     return new_link
 
 def main():
@@ -59,7 +64,7 @@ def main():
     title = input("Enter the title of the manga you want to download: ")
     link = target(title)
 
-    print(f"Link for '{title}': {link}\n")
+    print(f"\nTARGETED -> '{TITLE}' @ {link}\n")
 
     #Browser Setup
     options = Options()
@@ -89,13 +94,51 @@ def main():
     
     print("AdBlock Successfully Installed - Closing Tab\n")
 
-    #Actual Downloading Part
+    #Actual Download Logic
     print(f"Opening '{TITLE}' on Manganato")
     driver.get(MAIN_WEBSITE)
 
-    time.sleep(10)
+    #Delete THIS LATER
+    time.sleep(5)
 
-    print("Run Finished - Closing Browser")
+    #Output Directory
+    try:
+        print("Output Folder Found\n")
+        os.chdir("Output")
+    except FileNotFoundError:
+        print("Output Folder NOT Found - Creating")
+        os.mkdir("Output")
+        os.chdir("Output")
+
+
+    try:
+        os.mkdir(TITLE)
+        print(f"Directory For '{TITLE}' created successfully.\n")
+    except FileExistsError:
+        print(f"Directory '{TITLE}' already exists.\nWARNING: Continuing will delete existing 'Directory : {TITLE}'\n")
+
+        while(1):
+            override = input("Would you like to proceed? (y/n) : ")
+            override.lower()
+
+            if(override == 'y'):
+                os.rmdir(TITLE)
+                os.mkdir(TITLE)
+                print(f"Directory For '{TITLE}' created successfully.\n")
+
+                break
+            elif(override == 'n'):
+                close_browser(driver, "Run ABORTED - Closing Browser")
+                return
+            print(". Invalid Input .")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
+
+    close_browser(driver, "Run Finished - Closing Browser")
+
+def close_browser(driver, message):
+    print(message)
     driver.quit()
 
 if __name__ == '__main__':
