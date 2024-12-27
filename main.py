@@ -4,6 +4,8 @@ import re
 import os
 import shutil
 
+from tqdm import tqdm
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.service import Service
@@ -11,7 +13,8 @@ from selenium.webdriver.firefox.options import Options
 
 VERSION = 1.1
 
-DEBUG_MODE = True
+DEBUG_MODE = False
+HEADLESS = False
 
 GECKODRIVER_PATH = "C:\\Users\\dumpl\\Documents\\Firefox_Webscrape\\geckodriver.exe"
 FIREFOX_BINARY_PATH = "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
@@ -82,21 +85,22 @@ def download(driver):
             chapter_title = chapter_title.split(":")[0].strip()
 
         os.mkdir(chapter_title)
-        print(f"Downloading '{chapter_title}'")
+        #print(f"Downloading '{chapter_title}'")
         
         driver.execute_script(f"window.open('{chapter_link}', '_blank');")
         driver.switch_to.window(driver.window_handles[-1])
 
         os.chdir(chapter_title)
-        download_chapter(driver)
+        print()
+        download_chapter(driver, chapter_title)
         os.chdir('..')
 
         driver.close()
         driver.switch_to.window(original_window)
 
-def download_chapter(driver):
+def download_chapter(driver, chapter_title):
     #Required if not it's too fast to download
-    time.sleep(1)
+    time.sleep(2)
 
     images = driver.find_elements(By.TAG_NAME, "img")
     image_count = len(images)
@@ -105,16 +109,13 @@ def download_chapter(driver):
         print("No images found on this page or only one image present.")
         return
 
-    #print(f"Found {image_count} images in this chapter, excluding the last one.")
-
-    for idx, image in enumerate(images[:-1]):
+    for idx, image in enumerate(tqdm(images[:-1], desc=f"Downloading {chapter_title}", unit="image", colour="blue")):
         try:
             image_screenshot_path = f"{idx + 1}.png"
             image.screenshot(image_screenshot_path)
-            print(f"Page {idx + 1} saved")
+            #print(f"Page {idx + 1} saved")
         except Exception as e:
             print(f"Error capturing image {idx + 1}: {e}")
-
 
 def main():
     #User Input
@@ -125,6 +126,9 @@ def main():
 
     #Browser Setup
     options = Options()
+    if HEADLESS:
+        options.add_argument("--headless")
+
     options.binary_location = FIREFOX_BINARY_PATH
 
     print("Launching Firefox Browser\n")
