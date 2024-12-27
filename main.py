@@ -14,7 +14,7 @@ from selenium.webdriver.firefox.options import Options
 VERSION = 1.1
 
 DEBUG_MODE = False
-HEADLESS = False
+HEADLESS = True
 
 GECKODRIVER_PATH = "Firefox_Webscrape\\geckodriver.exe"
 FIREFOX_BINARY_PATH = "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
